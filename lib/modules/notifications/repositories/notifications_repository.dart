@@ -1,12 +1,7 @@
 import 'package:apparence_kit/core/initializer/onstart_service.dart';
-import 'package:apparence_kit/core/states/notifications_dispatcher.dart';
-import 'package:apparence_kit/i18n/translations.g.dart';
-import 'package:apparence_kit/modules/notifications/api/entities/notifications_entity.dart';
 import 'package:apparence_kit/modules/notifications/api/local_notifier.dart';
 import 'package:apparence_kit/modules/notifications/api/notifications_api.dart';
 import 'package:apparence_kit/modules/notifications/providers/models/notification.dart';
-import 'package:firebase_messaging/firebase_messaging.dart' show RemoteMessage;
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -31,83 +26,39 @@ abstract class NotificationsRepository implements OnStartService {
 final notificationRepositoryProvider = Provider<NotificationsRepository>(
   (ref) => AppNotificationsRepository(
     notificationsApi: ref.watch(notificationsApiProvider),
-    notificationPublisher: ref.watch(notificationPublisherProvider),
     localNotifier: ref.watch(localNotifierProvider),
     notificationSettings: ref.watch(notificationsSettingsProvider),
   ),
 );
 
+/// MVP Implementation - Local notifications only (no Firebase push)
+/// Firebase push notifications were removed to simplify development.
+///
+/// To add Firebase push notifications later:
+/// 1. Add firebase_messaging to pubspec.yaml
+/// 2. Restore the _onMessage and _onOpenMessage handlers
+/// 3. Add topic subscriptions in init()
 class AppNotificationsRepository implements NotificationsRepository {
   final NotificationsApi _notificationsApi;
-  final NotificationPublisher _notificationPublisher;
   final LocalNotifier _localNotifier;
   final NotificationSettings _notificationSettings;
 
   AppNotificationsRepository({
     required NotificationsApi notificationsApi,
-    required NotificationPublisher notificationPublisher,
     required LocalNotifier localNotifier,
     required NotificationSettings notificationSettings,
   })  : _notificationsApi = notificationsApi,
         _localNotifier = localNotifier,
-        _notificationSettings = notificationSettings,
-        _notificationPublisher = notificationPublisher;
+        _notificationSettings = notificationSettings;
 
   @override
   Future<void> init() async {
     final permission = await getPermissionStatus();
     if (permission is NotificationPermissionGranted) {
       _notificationSettings.init();
-
-      _notificationsApi.setForegroundHandler(_onMessage);
-      // _notificationsApi.setBackgroundHandler(_onMessage);
-      _notificationsApi.setOnOpenNotificationHandler(_onOpenMessage);
-
-      // Subscribe to topics doesn't work on web
-      if (kIsWeb) {
-        return;
-      }
-      /// If you want to subscribe to a specific topic
-      _notificationsApi.registerTopic('general');
-
-      /// If you want to subscribe to a specific topic based on the user language
-      final locale = LocaleSettings.instance.currentLocale.languageCode;
-      final langChannel = "general-$locale";
-      _notificationsApi.registerTopic(langChannel);
-
-      /// we register a test topic in debug mode
-      if (kDebugMode) {
-        debugPrint('Registering to test topic');
-        _notificationsApi.registerTopic('test');
-      }
+      // Note: Firebase push notification handlers removed for MVP
+      // Local notifications still work via LocalNotifier
     }
-    
-  }
-
-  Future<void> _onMessage(RemoteMessage message) async {
-    if (message.notification == null) {
-      return;
-    }
-    final notification = Notification.from(
-      message.notification!.toMap(),
-      data: message.data,
-      notifierApi: _localNotifier,
-      notifierSettings: _notificationSettings,
-    );
-    _notificationPublisher.publish(notification);
-  }
-
-  Future<void> _onOpenMessage(RemoteMessage message) async {
-    if (message.notification == null) {
-      return;
-    }
-    final notification = Notification.from(
-      message.notification!.toMap(),
-      data: message.data,
-      notifierApi: _localNotifier,
-      notifierSettings: _notificationSettings,
-    );
-    await notification.onTap();
   }
 
   @override

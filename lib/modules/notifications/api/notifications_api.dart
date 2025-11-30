@@ -1,38 +1,29 @@
 import 'package:apparence_kit/core/data/api/base_api_exceptions.dart';
 import 'package:apparence_kit/modules/notifications/api/entities/notifications_entity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final notificationsApiProvider = Provider<NotificationsApi>(
-  (ref) => FirebaseNotificationsApi(
-    messaging: FirebaseMessaging.instance,
+  (ref) => LocalNotificationsApi(
     logger: Logger(),
     client: Supabase.instance.client,
   ),
 );
 
-/// This class is responsible for listening from firebase notifications
-/// As I like repositories to not depend on external libraries
-/// I wrapped some of the firebase messaging methods
+/// NotificationsApi - Stub implementation for MVP
+/// Firebase Messaging was removed to simplify development.
+/// This implementation only supports local notifications and Supabase-stored notifications.
 ///
-/// You could use directly the firebase messaging methods but making a fake implementation
-/// of this class would be harder.
+/// To add Firebase push notifications later:
+/// 1. Add firebase_core and firebase_messaging to pubspec.yaml
+/// 2. Run flutterfire configure
+/// 3. Replace LocalNotificationsApi with FirebaseNotificationsApi
 abstract class NotificationsApi {
   /// Request permission to receive notifications
   Future<void> requestPermission();
-
-  // Used to listen to notifications when the app is in foreground
-  void setForegroundHandler(OnRemoteMessage handler);
-
-  // Used to listen to notifications when the app is in background
-  void setBackgroundHandler(OnRemoteMessage handler);
-
-  // Used to listen to notifications when user clicks on the notification
-  void setOnOpenNotificationHandler(OnRemoteMessage handler);
 
   // Used to get the past notifications from the server
   Future<List<NotificationEntity>> get(
@@ -48,66 +39,28 @@ abstract class NotificationsApi {
   // Used to get the unread notifications count
   Stream<int> unreadNotifications(String userId);
 
-  // Used to register to a topic
-  void registerTopic(String topic);
-
-  // Used to unregister from a topic
-  void unregisterTopic(String topic);
-
   // Used to get the permission status
   Future<PermissionStatus> getPermissionStatus();
 }
 
-typedef OnRemoteMessage = Future<void> Function(RemoteMessage message);
-
-class FirebaseNotificationsApi implements NotificationsApi {
-  final FirebaseMessaging _messaging;
+/// Local-only notifications API (no Firebase push)
+/// Uses Supabase for notification storage and local notifications for display
+class LocalNotificationsApi implements NotificationsApi {
   final SupabaseClient _client;
   final Logger _logger;
 
-  FirebaseNotificationsApi({
-    required FirebaseMessaging messaging,
+  LocalNotificationsApi({
     required SupabaseClient client,
     required Logger logger,
-  })  : _messaging = messaging,
-        _client = client,
+  })  : _client = client,
         _logger = logger;
 
   @override
   Future<void> requestPermission() async {
-    try {
-      await _messaging.requestPermission();
-    } catch (e) {
-      _logger.e(e);
-    }
+    await Permission.notification.request();
   }
 
   @override
-  void setForegroundHandler(OnRemoteMessage handler) {
-    FirebaseMessaging.onMessage.listen(handler);
-  }
-
-  @override
-  void setBackgroundHandler(OnRemoteMessage handler) {
-    FirebaseMessaging.onBackgroundMessage(handler);
-  }
-
-  @override
-  void setOnOpenNotificationHandler(OnRemoteMessage handler) {
-    FirebaseMessaging.onMessageOpenedApp.listen(handler);
-  }
-
-  @override
-  void registerTopic(String topic) {
-    _messaging.subscribeToTopic(topic);
-  }
-
-  @override
-  void unregisterTopic(String topic) {
-    _messaging.unsubscribeFromTopic(topic);
-  }
-
-  // Used to get the past notifications from the server
   Future<List<NotificationEntity>> get(
     String userId, {
     DateTime? startDate,
@@ -125,7 +78,7 @@ class FirebaseNotificationsApi implements NotificationsApi {
         return [];
       }
       return response
-          .map((e) => NotificationEntity.fromJson(e)) //
+          .map((e) => NotificationEntity.fromJson(e))
           .toList();
     } catch (e, stacktrace) {
       throw ApiError(

@@ -4,6 +4,7 @@ import 'package:apparence_kit/core/theme/providers/theme_provider.dart';
 import 'package:apparence_kit/modules/settings/ui/components/avatar_component.dart';
 import 'package:apparence_kit/modules/settings/ui/components/delete_user_component.dart';
 import 'package:apparence_kit/modules/settings/ui/widgets/settings_tile.dart';
+import 'package:apparence_kit/services/lab_mode_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -102,6 +103,18 @@ class SettingsPage extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              "Developer Options",
+              style: context.textTheme.titleMedium!.copyWith(
+                color: context.colors.onBackground,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const SettingsContainer(
+              child: LabModeSwitcher(),
+            ),
+            const SizedBox(height: 24),
             const DeleteUserButton(),
           ],
         ),
@@ -207,6 +220,48 @@ class _ThemeSwitcherState extends State<ThemeSwitcher> {
       },
       title: Text(
         "Light/Dark mode",
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+      ),
+    );
+  }
+}
+
+class LabModeSwitcher extends ConsumerStatefulWidget {
+  const LabModeSwitcher({super.key});
+
+  @override
+  ConsumerState<LabModeSwitcher> createState() => _LabModeSwitcherState();
+}
+
+class _LabModeSwitcherState extends ConsumerState<LabModeSwitcher> {
+  bool isLabModeEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final labModeService = ref.read(labModeServiceProvider);
+      setState(() {
+        isLabModeEnabled = labModeService.isLabModeEnabled;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: isLabModeEnabled,
+      onChanged: (value) async {
+        final labModeService = ref.read(labModeServiceProvider);
+        final newValue = await labModeService.toggleLabMode();
+        setState(() {
+          isLabModeEnabled = newValue;
+        });
+      },
+      title: Text(
+        "Enable Lab Mode (Michigan Winter)",
         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),

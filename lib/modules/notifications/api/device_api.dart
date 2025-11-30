@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:apparence_kit/core/data/api/base_api_exceptions.dart';
 import 'package:apparence_kit/modules/notifications/api/entities/device_entity.dart';
-import 'package:firebase_app_installations/firebase_app_installations.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:universal_io/io.dart';
@@ -11,13 +9,9 @@ import 'package:universal_io/io.dart';
 abstract class DeviceApi {
   /// We use a unique id for the device / installation
   /// This allows to send notifications to a specific device
-  /// iOS and Android tends now to restrict the use of device id
-  /// You could also generate your own id and store it in the device
-  /// But as we use firebase for notifications we can use the firebase installation id
   Future<DeviceEntity> get();
 
   /// Register the device in the backend
-  /// Of course your backend should check if the device is already registered
   /// throws an [ApiError] if something goes wrong
   Future<DeviceEntity> register(String userId, DeviceEntity device);
 
@@ -38,107 +32,65 @@ abstract class DeviceApi {
 typedef OnTokenRefresh = void Function(String token);
 
 final deviceApiProvider = Provider<DeviceApi>(
-  (ref) => FirebaseDeviceApi(
+  (ref) => StubDeviceApi(
     client: Supabase.instance.client,
-    messaging: FirebaseMessaging.instance,
-    installations: FirebaseInstallations.instance,
   ),
 );
 
-class FirebaseDeviceApi implements DeviceApi {
+/// Stub DeviceApi implementation for MVP (no Firebase)
+/// Firebase was removed to simplify development.
+/// Device registration/token management requires Firebase Messaging.
+///
+/// To add Firebase device management later:
+/// 1. Add firebase_app_installations and firebase_messaging to pubspec.yaml
+/// 2. Replace StubDeviceApi with FirebaseDeviceApi
+class StubDeviceApi implements DeviceApi {
   final SupabaseClient _client;
-  final FirebaseMessaging _messaging;
-  final FirebaseInstallations _installations;
-  StreamSubscription? _onTokenRefreshSubscription;
 
-  FirebaseDeviceApi({
+  StubDeviceApi({
     required SupabaseClient client,
-    required FirebaseMessaging messaging,
-    required FirebaseInstallations installations,
-  })  : _client = client,
-        _messaging = messaging,
-        _installations = installations;
+  }) : _client = client;
 
   @override
   Future<DeviceEntity> get() async {
-    try {
-      final installationId = await _installations.getId();
-      final token = await _messaging.getToken();
-      final os = Platform.isAndroid
-          ? OperatingSystem.android //
-          : OperatingSystem.ios;
-      return DeviceEntity(
-        installationId: installationId,
-        token: token!,
-        operatingSystem: os,
-        creationDate: DateTime.now(),
-        lastUpdateDate: DateTime.now(),
-      );
-    } catch (e) {
-      throw ApiError(
-        code: 0,
-        message: '$e',
-      );
-    }
+    // Generate a simple device ID without Firebase
+    // In production, you might use device_info_plus or a UUID
+    final os = Platform.isAndroid
+        ? OperatingSystem.android
+        : OperatingSystem.ios;
+    return DeviceEntity(
+      installationId: 'stub-device-id',
+      token: 'stub-token',
+      operatingSystem: os,
+      creationDate: DateTime.now(),
+      lastUpdateDate: DateTime.now(),
+    );
   }
 
   @override
   Future<DeviceEntity> register(String userId, DeviceEntity device) async {
-    try {
-      final deviceCpy = device.copyWith(userId: userId);
-      final result = await _client
-          .from('devices') //
-          .insert(deviceCpy.toJson())
-          .select();
-      return DeviceEntity.fromJson(result.first);
-    } catch (e, trace) {
-      throw ApiError(
-        code: 0,
-        message: '$e : $trace',
-      );
-    }
+    // Stub: No-op for MVP without Firebase push
+    return device.copyWith(userId: userId);
   }
 
   @override
   Future<DeviceEntity> update(DeviceEntity device) async {
-    try {
-      final result = await _client
-          .from('devices') //
-          .update(device.toJson())
-          .eq('installation_id', device.installationId)
-          .select();
-      return DeviceEntity.fromJson(result.first);
-    } catch (e, trace) {
-      throw ApiError(
-        code: 0,
-        message: '$e: $trace',
-      );
-    }
+    // Stub: No-op for MVP without Firebase push
+    return device;
   }
 
   @override
   Future<void> unregister(String userId, String installationId) async {
-    try {
-      await _client
-          .from('devices') //
-          .delete()
-          .eq('installation_id', installationId);
-    } catch (e) {
-      throw ApiError(
-        code: 0,
-        message: '$e',
-      );
-    }
+    // Stub: No-op for MVP without Firebase push
   }
 
   @override
   void onTokenRefresh(OnTokenRefresh onTokenRefresh) {
-    _onTokenRefreshSubscription =
-        _messaging.onTokenRefresh.listen((data) => onTokenRefresh(data));
+    // Stub: No-op - no Firebase token refresh without Firebase
   }
 
   @override
   void removeOnTokenRefreshListener() {
-    _onTokenRefreshSubscription?.cancel();
+    // Stub: No-op
   }
 }

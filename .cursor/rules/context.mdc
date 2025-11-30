@@ -21,10 +21,22 @@ You must ensure
 
 CHIP'D - Development Context Document for Cursor AI
 
-Last Updated: December 2024
+Last Updated: November 2024
 Developer: Solo dev (Full-time job + Family/4 kids)
 Timeline: Flexible MVP (Target: April-June 2025)
 Environment: Windows (Dev) + Mac (Builds) + Android Galaxy S23 (Primary Test)
+
+APP CONFIGURATION
+
+Bundle ID: io.chipgolf.app
+Domain: chipgolf.io
+Deep Link Scheme: io.chipgolf.app://login-callback
+
+Authentication (Supabase):
+- Email/Password: ENABLED
+- Magic Link: ENABLED  
+- Anonymous: DISABLED
+- Social Logins: DISABLED (removed for MVP simplicity)
 
 PROJECT OVERVIEW
 
@@ -125,6 +137,12 @@ State: Riverpod.
 
 Testing: flutter_test, mockito.
 
+Removed for MVP (can add post-MVP if needed):
+- Firebase (firebase_core, firebase_messaging, firebase_remote_config, firebase_app_installations)
+- Push notifications use local notifications only (flutter_local_notifications)
+- Remote config uses stub implementation
+- See "FIREBASE REMOVAL" section below for restoration instructions
+
 Backend (Supabase)
 
 Database: PostgreSQL.
@@ -178,3 +196,32 @@ Map Performance: Use BitmapDescriptor for markers to keep performance high.
 No Bloat: Do NOT suggest adding social feeds, wind tracking, or complex stats. Keep the UI focused on "Yardage + Score".
 
 Test First: When writing logic, suggest the Unit Test before or with the implementation.
+
+FIREBASE REMOVAL (MVP Decision)
+
+Status: Firebase dependencies removed for MVP to simplify development.
+
+Rationale: Push notifications and remote config are NOT in MVP scope. The core MVP is GPS + NFC + Scorecard.
+
+What was removed:
+- firebase_core, firebase_messaging, firebase_remote_config, firebase_app_installations from pubspec.yaml
+- Firebase.initializeApp() from main.dart
+- Google Services plugin from android/app/build.gradle.kts and android/settings.gradle.kts
+- RemoteConfigApi now uses StubRemoteConfigApi (no-op)
+- NotificationsApi now uses LocalNotificationsApi (local only, no push)
+- DeviceApi now uses StubDeviceApi (no Firebase token management)
+
+What still works:
+- Local notifications via flutter_local_notifications
+- Supabase-stored notifications (can be fetched and displayed)
+- All other app functionality
+
+To restore Firebase (post-MVP):
+1. Add to pubspec.yaml: firebase_core, firebase_messaging, firebase_remote_config, firebase_app_installations
+2. Run: dart pub global activate flutterfire_cli && flutterfire configure
+3. Add google-services plugin back to Gradle files
+4. Restore Firebase.initializeApp() in main.dart
+5. Replace stub implementations with Firebase implementations in:
+   - lib/core/data/api/remote_config_api.dart
+   - lib/modules/notifications/api/notifications_api.dart
+   - lib/modules/notifications/api/device_api.dart

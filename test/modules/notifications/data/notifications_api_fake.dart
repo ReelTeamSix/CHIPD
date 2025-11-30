@@ -1,43 +1,12 @@
 import 'package:apparence_kit/modules/notifications/api/entities/notifications_entity.dart';
 import 'package:apparence_kit/modules/notifications/api/notifications_api.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 // ignore: depend_on_referenced_packages
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart';
 
+/// Fake NotificationsApi for testing (no Firebase)
 class FakeNotificationsApi implements NotificationsApi {
-  OnRemoteMessage? _backgroundHandler;
-  OnRemoteMessage? _foregroundHandler;
-  OnRemoteMessage? _onOpenNotificationHandler;
-
   @override
   Future<void> requestPermission() => Future.value();
-
-  @override
-  void setBackgroundHandler(OnRemoteMessage handler) {
-    _backgroundHandler = handler;
-  }
-
-  @override
-  void setForegroundHandler(OnRemoteMessage handler) {
-    _foregroundHandler = handler;
-  }
-
-  @override
-  void setOnOpenNotificationHandler(OnRemoteMessage handler) {
-    _onOpenNotificationHandler = handler;
-  }
-
-  void sendBackgroundMessage(RemoteMessage message) {
-    _backgroundHandler?.call(message);
-  }
-
-  void sendForegroundMessage(RemoteMessage message) {
-    _foregroundHandler?.call(message);
-  }
-
-  void sendOnOpenNotificationMessage(RemoteMessage message) {
-    _onOpenNotificationHandler?.call(message);
-  }
 
   @override
   Future<void> read(String userId, String notificationId) {
@@ -69,12 +38,6 @@ class FakeNotificationsApi implements NotificationsApi {
       ),
     ));
   }
-
-  @override
-  void registerTopic(String topic) {}
-
-  @override
-  void unregisterTopic(String topic) {}
 
   @override
   Future<PermissionStatus> getPermissionStatus() {

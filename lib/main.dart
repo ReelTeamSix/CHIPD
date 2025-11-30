@@ -1,6 +1,4 @@
 import 'package:apparence_kit/core/data/api/analytics_api.dart';
-
-import 'package:apparence_kit/core/data/api/remote_config_api.dart';
 import 'package:apparence_kit/core/initializer/onstart_widget.dart';
 import 'package:apparence_kit/core/shared_preferences/shared_preferences.dart';
 import 'package:apparence_kit/core/states/user_state_notifier.dart';
@@ -10,14 +8,11 @@ import 'package:apparence_kit/core/theme/providers/theme_provider.dart';
 import 'package:apparence_kit/core/theme/texts.dart';
 import 'package:apparence_kit/core/theme/universal_theme.dart';
 import 'package:apparence_kit/environnements.dart';
-import 'package:apparence_kit/firebase_options_dev.dart' as firebase_dev;
 import 'package:apparence_kit/i18n/translations.g.dart';
-
 import 'package:apparence_kit/modules/notifications/api/local_notifier.dart';
 import 'package:apparence_kit/modules/notifications/repositories/notifications_repository.dart';
 import 'package:apparence_kit/modules/subscription/repositories/subscription_repository.dart';
 import 'package:apparence_kit/router.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,17 +39,6 @@ void main() async {
 
   // initialize shared preferences for theme
   final sharedPrefs = await SharedPreferences.getInstance();
-
-  // initialize firebase app for notifications
-  await switch(env) {
-    DevEnvironment() => Firebase.initializeApp(
-      options: firebase_dev.DefaultFirebaseOptions.currentPlatform,
-    ),
-    ProdEnvironment() => Firebase.initializeApp(
-      // TODO replace with your own firebase options for production environment (if needed)
-      options: firebase_dev.DefaultFirebaseOptions.currentPlatform,
-    ),
-  };
 
   // initialize supabase app
   await switch(env) {
@@ -148,20 +132,15 @@ class MyApp extends ConsumerWidget {
           // Initializer is a widget that allows us to run some code before the app is ready
           builder: (context, child) => Initializer(
             services: [
-              
               // shared preferences must be loaded
               sharedPreferencesProvider,
-              // remote config api
-              remoteConfigApiProvider,
-              // notifications
+              // local notifications (no Firebase push)
               notificationsSettingsProvider,
-              notificationRepositoryProvider,
               // user state
               subscriptionRepositoryProvider,
               userStateNotifierProvider.notifier,
               // analytics
               analyticsApiProvider,
-              
             ],
             onReady: child!,
             onError: (_, error) => InitializationErrorPage(error: error),

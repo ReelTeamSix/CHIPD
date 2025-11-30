@@ -154,21 +154,30 @@ Note: wait a minute after enabling anonymous sign-in before trying again. It tak
 
   @override
   Future<Credentials> signinWithGoogle() async {
-    final googleSignIn = GoogleSignIn(
-      clientId: 'iosClientId', // Prefer set this as environment variable
-      serverClientId: 'webClientId', // Prefer set this as environment variable
-    );
-    final googleUser = await googleSignIn.signIn();
-    final googleAuth = await googleUser!.authentication;
-    final accessToken = googleAuth.accessToken;
+    // google_sign_in v7.x uses singleton pattern
+    // Note: Configure clientId/serverClientId in platform-specific config files
+    // iOS: ios/Runner/Info.plist
+    // Android: android/app/src/main/res/values/strings.xml or google-services.json
+    // Web: index.html meta tag
+    final googleSignIn = GoogleSignIn.instance;
+    
+    // Initialize if not already done (safe to call multiple times per session)
+    await googleSignIn.initialize();
+    
+    // Authenticate the user
+    final googleUser = await googleSignIn.authenticate();
+    final googleAuth = googleUser.authentication;
     final idToken = googleAuth.idToken;
 
-    if (accessToken == null) {
-      throw 'No Access Token found.';
-    }
     if (idToken == null) {
       throw 'No ID Token found.';
     }
+
+    // For Supabase, we need both idToken and accessToken
+    // Get authorization with openid scope to get access token
+    final authClient = googleUser.authorizationClient;
+    final authorization = await authClient.authorizeScopes(['openid', 'email', 'profile']);
+    final accessToken = authorization.accessToken;
 
     final res = await client.auth.signInWithIdToken(
       provider: OAuthProvider.google,
@@ -176,7 +185,6 @@ Note: wait a minute after enabling anonymous sign-in before trying again. It tak
       accessToken: accessToken,
     );
     return Credentials(id: res.user!.id, token: res.session?.accessToken ?? '');
-    
   }
 
   @override
