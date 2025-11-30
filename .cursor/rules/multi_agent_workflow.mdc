@@ -1,0 +1,172 @@
+---
+description: How to use multiple Cursor agents in parallel
+globs:
+alwaysApply: false
+---
+
+# Multi-Agent Workflow Guide
+
+## Setup (4 Agents)
+
+Open 4 Cursor windows/tabs, each with the same project. Assign roles:
+
+| Window | Agent Role | Color Code | Focus Files |
+|--------|-----------|------------|-------------|
+| 1 | 🗄️ Backend | Blue | `supabase/`, SQL, Edge Functions |
+| 2 | 📱 UI | Green | `lib/modules/*/ui/` |
+| 3 | ⚙️ Services | Orange | `lib/modules/*/services/`, `repositories/` |
+| 4 | 🧪 Testing | Purple | `test/` |
+
+## Communication Protocol
+
+### Starting a Sprint Block
+Each agent opens with:
+```
+@context.mdc @month1_sprint.mdc
+
+I am Agent [1-4] (Backend/UI/Services/Testing).
+Starting [Week X, Day Y] sprint block.
+My task: [paste relevant section from sprint guide]
+```
+
+### Dependency Handoffs
+When Agent 1 (Backend) creates a table/API, they output:
+```
+✅ HANDOFF: `nfc_tags` table created
+Schema: uid (text PK), owner_id (uuid), status (text)
+API: POST /functions/v1/register-tag { tagUid: string }
+Response: { id, uid, owner_id, status }
+```
+
+Other agents can reference this in their prompts:
+```
+Backend has created: [paste handoff note]
+Now implementing UI that consumes this API...
+```
+
+### Sync Points
+At designated sync points, ALL agents:
+1. Commit their changes to feature branches
+2. Run `flutter test`
+3. Report status in a shared doc/chat
+
+## Parallel vs Sequential Work
+
+### ✅ Can Parallelize
+- Backend schema + UI wireframes (no integration yet)
+- Service logic + Test mocks
+- Multiple independent screens
+- Different feature modules
+
+### ⚠️ Must Sequence
+- API must exist before UI calls it
+- Service must exist before tests mock it
+- Models must exist before repositories use them
+
+## Example Sprint Block (4 Agents)
+
+**10:00 AM - Sprint Start**
+```
+Agent 1: Creating `rounds` table migration
+Agent 2: Building StartRoundScreen layout
+Agent 3: Designing Round domain model
+Agent 4: Writing test cases for round logic
+```
+
+**10:30 AM - First Sync**
+```
+Agent 1: ✅ SQL ready, deploying to Supabase
+Agent 2: ✅ UI scaffold complete, needs service
+Agent 3: ✅ Round model done, creating repository
+Agent 4: ✅ Test stubs ready, waiting for service
+```
+
+**10:45 AM - Integration Phase**
+```
+Agent 2: Connecting UI to Agent 3's service
+Agent 4: Running tests against Agent 3's implementation
+Agent 1: Creating Edge Function
+Agent 3: Integrating with Agent 1's API
+```
+
+**11:00 AM - Final Sync**
+```
+All: git commit, push to feature branches
+All: Create PRs to develop
+All: Run flutter test - verify all green
+```
+
+## Conflict Resolution
+
+If two agents modify the same file:
+1. Agent with PRIMARY ownership wins (see table above)
+2. Secondary agent rebases: `git pull --rebase origin develop`
+3. Resolve conflicts in secondary agent's branch
+
+## Quick Commands
+
+```bash
+# See what others changed
+git fetch origin
+git log origin/develop --oneline -10
+
+# Rebase your work on latest
+git rebase origin/develop
+
+# If conflicts, resolve then:
+git rebase --continue
+```
+
+## Agent Prompts Template
+
+### Agent 1 (Backend) Starting Prompt
+```
+@context.mdc @month1_sprint.mdc @supabase_api.mdc
+
+I am the Backend agent. Before I start:
+git pull origin develop
+
+My task for this sprint block:
+[paste from sprint guide]
+
+I will output HANDOFF notes when schema/APIs are ready.
+```
+
+### Agent 2 (UI) Starting Prompt  
+```
+@context.mdc @month1_sprint.mdc @style_guidelines.mdc @flutter.mdc
+
+I am the UI agent. Before I start:
+git pull origin develop
+
+My task for this sprint block:
+[paste from sprint guide]
+
+I will follow CHIP'D style guidelines and use theme colors.
+```
+
+### Agent 3 (Services) Starting Prompt
+```
+@context.mdc @month1_sprint.mdc @flutter.mdc
+
+I am the Services agent. Before I start:
+git pull origin develop
+
+My task for this sprint block:
+[paste from sprint guide]
+
+I will create providers/repositories following ApparenceKit patterns.
+```
+
+### Agent 4 (Testing) Starting Prompt
+```
+@context.mdc @month1_sprint.mdc @unit_tests.mdc
+
+I am the Testing agent. Before I start:
+git pull origin develop
+
+My task for this sprint block:
+[paste from sprint guide]
+
+I will create fakes/mocks and comprehensive test cases.
+```
