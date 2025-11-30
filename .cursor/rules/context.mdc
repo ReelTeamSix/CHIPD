@@ -19,6 +19,41 @@ Please think out loud and provide
 You must ensure 
 - when implementing new feature it doesn't break existing feature
 
+## Git Workflow (ALWAYS FOLLOW)
+
+### Before ANY Work
+```bash
+git pull origin master  # Always sync first
+```
+
+### Branch Strategy
+- `master` - Protected, stable releases only
+- `develop` - Integration branch for features
+- `feature/<name>` - Individual features (e.g., `feature/nfc-handshake`)
+- `fix/<name>` - Bug fixes
+
+### Checkpoint Tags (MVP Phases)
+| Tag | Description | Status |
+|-----|-------------|--------|
+| `v0.1.0-theme-refactor` | CHIP'D theme system | ✅ Complete |
+| `v0.2.0-phase1-nfc` | Phase 1: NFC Handshake + Lab Mode | 🔲 Pending |
+| `v0.3.0-phase2-caddie` | Phase 2: GPS + Distance + Maps | 🔲 Pending |
+| `v0.4.0-phase3-polish` | Phase 3: Token Logic + UI Polish | 🔲 Pending |
+| `v1.0.0-mvp` | MVP Release | 🔲 Pending |
+
+### Commit Convention
+```
+<type>: <description>
+
+Types: feat, fix, refactor, docs, test, chore
+```
+
+### Creating a Checkpoint
+```bash
+git tag -a v0.X.0-<name> -m "Description"
+git push origin v0.X.0-<name>
+```
+
 CHIP'D - Development Context Document for Cursor AI
 
 Last Updated: November 2024
