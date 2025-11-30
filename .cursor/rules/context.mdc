@@ -85,6 +85,14 @@ Constraint: Developer is in Michigan (winter). Cannot access physical golf cours
 
 Requirement: The app MUST have a "Debug/Lab Mode" toggle.
 
+Implementation Status:
+- LabModeService: lib/services/lab_mode_service.dart (persists state via SharedPreferences)
+- UI Toggle: Settings Page > Developer Options > "Enable Lab Mode (Michigan Winter)" switch
+- Uses labModeServiceProvider to connect UI to service
+- LatLng Model: lib/core/data/models/lat_lng.dart (simple coordinate class)
+- deskLocation constant: LatLng(42.808504031807246, -85.98755596334448) - Developer's Michigan desk
+- getCurrentLocation() method: Returns deskLocation when Lab Mode enabled, null otherwise (GPS hook point)
+
 Mock GPS: When enabled, the app forces the location to a specific coordinate (e.g., the 1st tee of a test course).
 
 Map Override: The Google Map must center on the Mock Location, not the real location.

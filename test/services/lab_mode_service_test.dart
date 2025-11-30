@@ -1,3 +1,4 @@
+import 'package:apparence_kit/core/data/models/lat_lng.dart';
 import 'package:apparence_kit/core/shared_preferences/shared_preferences.dart';
 import 'package:apparence_kit/services/lab_mode_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -97,6 +98,38 @@ void main() {
       // Verify the state persisted
       expect(newLabModeService.isLabModeEnabled, isTrue);
     });
+
+    test('lab mode enabled, getCurrentLocation => should return deskLocation', () async {
+      // Enable lab mode
+      await labModeService.enableLabMode();
+      expect(labModeService.isLabModeEnabled, isTrue);
+
+      // Get current location
+      final location = labModeService.getCurrentLocation();
+
+      // Verify it returns the exact desk coordinates
+      expect(location, isNotNull);
+      expect(location, equals(LabModeService.deskLocation));
+      expect(location!.latitude, equals(42.808504031807246));
+      expect(location.longitude, equals(-85.98755596334448));
+    });
+
+    test('lab mode disabled, getCurrentLocation => should return null', () {
+      // Verify lab mode is disabled
+      expect(labModeService.isLabModeEnabled, isFalse);
+
+      // Get current location
+      final location = labModeService.getCurrentLocation();
+
+      // Verify it returns null (real GPS hook point)
+      expect(location, isNull);
+    });
+
+    test('deskLocation constant => should have correct coordinates', () {
+      // Verify the desk location constant is correctly defined
+      expect(LabModeService.deskLocation.latitude, equals(42.808504031807246));
+      expect(LabModeService.deskLocation.longitude, equals(-85.98755596334448));
+    });
   });
 
   group('LabModeServiceFake', () {
@@ -117,6 +150,25 @@ void main() {
 
       expect(result, isTrue);
       expect(fake.isLabModeEnabled, isTrue);
+    });
+
+    test('initial state true, getCurrentLocation => should return deskLocation', () {
+      final fake = LabModeServiceFake(initialState: true);
+
+      final location = fake.getCurrentLocation();
+
+      expect(location, isNotNull);
+      expect(location, equals(LabModeService.deskLocation));
+      expect(location!.latitude, equals(42.808504031807246));
+      expect(location.longitude, equals(-85.98755596334448));
+    });
+
+    test('initial state false, getCurrentLocation => should return null', () {
+      final fake = LabModeServiceFake(initialState: false);
+
+      final location = fake.getCurrentLocation();
+
+      expect(location, isNull);
     });
   });
 }
