@@ -28,6 +28,7 @@ import 'package:apparence_kit/modules/subscription/providers/models/premium_stat
 import 'package:apparence_kit/modules/subscription/api/subscription_api.dart';
 import 'package:apparence_kit/modules/subscription/repositories/subscription_repository.dart';
 import 'package:apparence_kit/router.dart';
+import 'package:apparence_kit/services/lab_mode_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,6 +92,7 @@ extension AppWidgetTester on WidgetTester {
     RatingApiFake? ratingApiFakeOverride,
     RemoteConfigApi? remoteConfigApiFakeOverride,
     AnalyticsApi? analyticsApiFakeOverride,
+    LabModeService? labModeServiceFakeOverride,
     Widget? home,
     RouterConfig<Object>? routerConfig,
     String? initialRoute,
@@ -154,6 +156,9 @@ extension AppWidgetTester on WidgetTester {
           ),
           analyticsApiProvider.overrideWithValue(
             analyticsApiFakeOverride ?? AnalyticsApiFake(),
+          ),
+          labModeServiceProvider.overrideWithValue(
+            labModeServiceFakeOverride ?? LabModeServiceFake(),
           ),
         ],
         child: Consumer(builder: (context, ref, child) {
