@@ -7,9 +7,29 @@ class Password {
     if (value.isEmpty) {
       throw const PasswordException("You must provide a password");
     }
-    if (value.length < 5) {
+    if (value.length < 8) {
       throw const PasswordException(
-        "Your password must be at least 5 characters long",
+        "Password must be at least 8 characters",
+      );
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      throw const PasswordException(
+        "Password must contain an uppercase letter",
+      );
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      throw const PasswordException(
+        "Password must contain a lowercase letter",
+      );
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      throw const PasswordException(
+        "Password must contain a number",
+      );
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]').hasMatch(value)) {
+      throw const PasswordException(
+        "Password must contain a symbol",
       );
     }
   }

@@ -126,13 +126,24 @@ class SignupForm extends ConsumerWidget {
                     .then(
                       // ignore: use_build_context_synchronously
                       (_) => context.go('/'),
-                      // we don't provide more details to the user about the error for security reasons
-                      onError:
-                          (err) => showErrorToast(
-                            context: navigatorKey.currentContext!,
-                            title: 'Error',
-                            text: 'This email already exists or is invalid',
-                          ),
+                      onError: (err) {
+                        // Check for network-related errors
+                        final errorString = err.toString().toLowerCase();
+                        String message;
+                        if (errorString.contains('socket') ||
+                            errorString.contains('host lookup') ||
+                            errorString.contains('network') ||
+                            errorString.contains('connection')) {
+                          message = 'Network error. Please check your internet connection.';
+                        } else {
+                          message = 'This email already exists or is invalid';
+                        }
+                        showErrorToast(
+                          context: navigatorKey.currentContext!,
+                          title: 'Error',
+                          text: message,
+                        );
+                      },
                     );
               },
               child: switch (state) {

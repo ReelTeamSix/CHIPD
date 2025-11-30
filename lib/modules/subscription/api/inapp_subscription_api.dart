@@ -27,19 +27,19 @@ class RevenueCatPaymentApi {
   }) : _environment = environment;
 
   Future<void> init() async {
-    await Purchases.setLogLevel(LogLevel.debug);
-    PurchasesConfiguration configuration;
-    if (Platform.isAndroid) {
-      configuration = PurchasesConfiguration(
-        _environment.revenueCatAndroidApiKey!,
-      );
-    } else if (Platform.isIOS) {
-      configuration = PurchasesConfiguration(
-        _environment.revenueCatIOSApiKey!,
-      );
-    } else {
-      throw Exception("Unsupported platform");
+    // Check if RevenueCat API keys are configured
+    final apiKey = Platform.isAndroid 
+        ? _environment.revenueCatAndroidApiKey 
+        : _environment.revenueCatIOSApiKey;
+    
+    if (apiKey == null || apiKey.isEmpty) {
+      // No API key configured - skip RevenueCat init for MVP
+      Logger().w('RevenueCat API key not configured - subscriptions disabled');
+      return;
     }
+    
+    await Purchases.setLogLevel(LogLevel.debug);
+    final configuration = PurchasesConfiguration(apiKey);
     await Purchases.configure(configuration);
     _hasInit = true;
   }
@@ -47,7 +47,8 @@ class RevenueCatPaymentApi {
   // We use a custom subscriber id to be able to identify the user
   Future<void> initUser(String userId) async {
     if (!_hasInit) {
-      throw Exception('RevenueCat is not initialized');
+      // RevenueCat not configured - skip silently for MVP
+      return;
     }
     
     await Purchases.logIn(userId);
@@ -62,7 +63,8 @@ class RevenueCatPaymentApi {
 
   Future<List<SubscriptionProduct>> getOffers(String? offerId) async {
     if (!_hasInit) {
-      throw Exception('RevenueCat is not initialized');
+      // RevenueCat not configured - return empty list for MVP
+      return [];
     }
     final offers = await Purchases.getOfferings();
     var offer = offers.current;

@@ -5,6 +5,20 @@ allprojects {
     }
 }
 
+// Force all subprojects (plugins) to use Java 11 to suppress obsolete Java 8 warnings
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            extensions.configure<com.android.build.gradle.BaseExtension>("android") {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_11
+                    targetCompatibility = JavaVersion.VERSION_11
+                }
+            }
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

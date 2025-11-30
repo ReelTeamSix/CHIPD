@@ -55,19 +55,18 @@ class SupabaseAuthenticationApi implements AuthenticationApi {
       }
       return Credentials(id: res.user!.id, token: '');
     }
-    return client.auth
-        .signUp(
-          email: email,
-          password: password,
-        )
-        .then(
-          (value) => Credentials(
-            id: value.user!.id,
-            token: value.session?.accessToken ?? '',
-          ),
-          onError: (error) {
-            Logger().e("Error while signup: $error");
-            Logger().e('''
+    try {
+      final response = await client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      return Credentials(
+        id: response.user!.id,
+        token: response.session?.accessToken ?? '',
+      );
+    } catch (error) {
+      _logger.e("Error while signup: $error");
+      _logger.e('''
 ==============================================================
 💡 Please check you enabled email authentication in Supabase 
   (Supabase dashboard > Authentication > Providers > Email (enable it))
@@ -75,10 +74,9 @@ class SupabaseAuthenticationApi implements AuthenticationApi {
 Note: wait a minute after enabling before trying again. It takes a bit of time to propagate.
 Second note: Ensure you installed database schema and policies : https://apparencekit.dev/docs/start/supabase-setup/
 ==============================================================
-                ''');
-            return error;
-          },
-        );
+              ''');
+      rethrow;
+    }
   }
 
   @override
@@ -97,24 +95,24 @@ Second note: Ensure you installed database schema and policies : https://apparen
   }
 
   @override
-  Future<Credentials> signinAnonymously() {
-    return client.auth.signInAnonymously().then(
-          (value) => Credentials(
-            id: value.user!.id,
-            token: value.session?.accessToken ?? '',
-          ),
-          onError: (error) {
-            Logger().e("Error while signing in anonymously: $error");
-            Logger().e('''
+  Future<Credentials> signinAnonymously() async {
+    try {
+      final response = await client.auth.signInAnonymously();
+      return Credentials(
+        id: response.user!.id,
+        token: response.session?.accessToken ?? '',
+      );
+    } catch (error) {
+      _logger.e("Error while signing in anonymously: $error");
+      _logger.e('''
 ==============================================================
 💡 Please check you enabled anonymous sign-in in Supabase 
   (Supabase dashboard > project settings > Authentication > Allow anonymous sign-in (don't enable captcha)
 Note: wait a minute after enabling anonymous sign-in before trying again. It takes a bit of time to propagate.
 ==============================================================
-                ''');
-            return error;
-          },
-        );
+              ''');
+      rethrow;
+    }
   }
 
   @override

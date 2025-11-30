@@ -41,16 +41,11 @@ void main() async {
   final sharedPrefs = await SharedPreferences.getInstance();
 
   // initialize supabase app
-  await switch(env) {
-    DevEnvironment(:final backendUrl) => Supabase.initialize(
-      url: backendUrl,
-      anonKey: const String.fromEnvironment('SUPABASE_TOKEN'),
-    ),
-    ProdEnvironment(:final backendUrl) => Supabase.initialize(
-      url: backendUrl,
-      anonKey: const String.fromEnvironment('SUPABASE_TOKEN'),
-    ),
-  };
+  // Note: Anon key is public - security is handled by RLS policies
+  await Supabase.initialize(
+    url: env.backendUrl,
+    anonKey: env.supabaseAnonKey,
+  );
 
   // initialize sentry for error reporting in production only
   // run the app with Sentry for production environment
@@ -117,7 +112,7 @@ class MyApp extends ConsumerWidget {
       ),
       child: Builder(builder: (context) {
         return MaterialApp.router(
-          title: 'Flutter Pro Starter Kit',
+          title: 'CHIP\'D',
           theme: ThemeProvider.of(context).light,
           darkTheme: ThemeProvider.of(context).dark,
           themeMode: ThemeProvider.of(context).mode,

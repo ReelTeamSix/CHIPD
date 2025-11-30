@@ -1,0 +1,115 @@
+---
+description: CHIP'D visual design system - colors, typography, and component styles
+globs: 
+  - "**/*.dart"
+alwaysApply: true
+---
+
+# CHIP'D Style Guidelines
+
+## Color System
+
+### Primary Palette (90% of Usage)
+| Color | HEX | Usage |
+|-------|-----|-------|
+| Cyber Green | #00FF94 | CTAs, verified badges, accents, highlights, success states |
+| Green Dark | #00CC76 | Gradient end color for buttons |
+| Deepest Black | #050505 | Backgrounds, primary surfaces, all body text |
+| Pure White | #FFFFFF | Headlines, primary text on dark backgrounds |
+
+### Secondary Palette (10% of Usage)
+| Color | HEX | Usage |
+|-------|-----|-------|
+| Accent Gray | #1A1A1A | Cards, elevated backgrounds, subtle separators |
+| Text Gray | #A0A0A0 | Descriptive text, labels, timestamps, metadata |
+| Error Red | #FF3B3B | Disputes, violations, error messages |
+
+### The 900 Gold Palette (EXCLUSIVE to The 900 Tier)
+| Color | HEX | Usage |
+|-------|-----|-------|
+| Metallic Gold | #D4AF37 | ONLY for The 900 branding, founder tier elements, premium badges |
+| Gold Dark | #AA8A26 | Gold gradient end color |
+
+**DO NOT USE gold colors anywhere else in the app.**
+
+## Typography
+
+### Font Family
+- **Primary**: Inter
+- **Weights**: 400 (Regular), 600 (Semibold), 700 (Bold), 800 (Extrabold), 900 (Black)
+
+### Font Scale
+| Style | Size | Weight | Line Height | Letter Spacing |
+|-------|------|--------|-------------|----------------|
+| Display | 72-144px | 900 | 0.9 | -2% |
+| H1 | 48-64px | 800 | 1.1 | -1% |
+| H2 | 32-40px | 800 | 1.2 | - |
+| H3 | 20-24px | 700 | 1.3 | - |
+| Body | 16-18px | 400 | 1.6 | - |
+| Label | 12-14px | 600/800 | - | 5-10%, UPPERCASE |
+| Micro | 10-11px | 400 | - | 20-40%, UPPERCASE |
+
+## Component Styles
+
+### Primary Button (Green CTA)
+```dart
+// Use ElevatedButton with these properties
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: context.colors.primary,
+    foregroundColor: context.colors.onPrimary,
+  ),
+  child: Text('BUTTON TEXT'), // Always uppercase
+)
+```
+
+### Secondary Button (Outline)
+```dart
+OutlinedButton(
+  style: OutlinedButton.styleFrom(
+    side: BorderSide(color: Colors.white.withOpacity(0.2)),
+  ),
+)
+```
+
+### Card Component
+```dart
+Container(
+  decoration: BoxDecoration(
+    color: Colors.white.withOpacity(0.05),
+    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    borderRadius: BorderRadius.circular(16),
+  ),
+)
+```
+
+### Input Fields
+```dart
+// Uses InputDecorationTheme from theme
+TextField(
+  decoration: InputDecoration(
+    hintText: 'Placeholder text',
+  ),
+)
+```
+
+## Spacing System (8px base)
+- 4px, 8px, 16px, 24px, 32px, 48px, 64px, 96px, 128px
+
+## Border Radius Scale
+- Small (buttons, badges): 8px
+- Medium (cards): 16px
+- Large (modals): 24px
+- Full (pills): 9999px
+
+## Shadows
+- Card: `BoxShadow(offset: Offset(0, 8), blurRadius: 32, color: Colors.black.withOpacity(0.4))`
+- Button hover: `BoxShadow(offset: Offset(0, 12), blurRadius: 40, color: Color(0x3300FF94))`
+
+## Implementation Notes
+
+1. **Always use theme colors**: `context.colors.primary`, `context.colors.background`, etc.
+2. **Never hardcode colors**: Use `ChipdColors` constants or theme extension
+3. **Dark-first design**: CHIP'D is primarily a dark theme app
+4. **Access custom text styles**: `context.chipdText.h1`, `context.chipdText.body`, etc.
+5. **Gold is exclusive**: Only use gold colors for The 900 founder tier features

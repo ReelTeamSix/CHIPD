@@ -5,15 +5,9 @@ import 'package:apparence_kit/modules/authentication/providers/models/email.dart
 import 'package:apparence_kit/modules/authentication/providers/models/password.dart';
 import 'package:apparence_kit/modules/authentication/providers/models/signin_state.dart';
 import 'package:apparence_kit/modules/authentication/providers/signin_state_provider.dart';
-import 'package:apparence_kit/modules/authentication/ui/components/apple_signin.dart';
-import 'package:apparence_kit/modules/authentication/ui/components/facebook_signin.dart';
-import 'package:apparence_kit/modules/authentication/ui/components/google_signin.dart';
-import 'package:apparence_kit/modules/authentication/ui/widgets/round_signin.dart';
-import 'package:apparence_kit/modules/authentication/ui/widgets/social_separator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:universal_io/io.dart';
 
 final _formKey = GlobalKey<FormState>();
 
@@ -118,18 +112,28 @@ class SigninPage extends ConsumerWidget {
                               .then(
                                 // ignore: use_build_context_synchronously
                                 (value) => context.go('/'),
-                                onError:
-                                    (err) => showErrorToast(
-                                      // ignore: use_build_context_synchronously
-                                      context: context,
-                                      title: 'Error',
-                                      text:
-                                          'Wrong email, password or this email is not registered',
-                                    ),
+                                onError: (err) {
+                                  final errorString = err.toString().toLowerCase();
+                                  String message;
+                                  if (errorString.contains('socket') ||
+                                      errorString.contains('host lookup') ||
+                                      errorString.contains('network') ||
+                                      errorString.contains('connection')) {
+                                    message = 'Network error. Please check your internet connection.';
+                                  } else {
+                                    message = 'Wrong email, password or this email is not registered';
+                                  }
+                                  showErrorToast(
+                                    // ignore: use_build_context_synchronously
+                                    context: context,
+                                    title: 'Error',
+                                    text: message,
+                                  );
+                                },
                               );
                         },
                         child: switch (state) {
-                          SigninStateData() => const Text('Create my account'),
+                          SigninStateData() => const Text('Sign In'),
                           SigninStateSending() => const ButtonLoading(),
                         },
                       ),
@@ -141,29 +145,8 @@ class SigninPage extends ConsumerWidget {
                         child: const Text("Don't have an account?"),
                       ),
                       const SizedBox(height: 32),
-                      const SocialSeparator(),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // remove the components you don't need
-                          const GoogleSignInComponent(),
-                          // will only be visible on Android
-                          if (Platform.isAndroid)
-                            const GooglePlayGamesSignInComponent(),
-                          // will only be visible on iOS
-                          const AppleSigninComponent(),
-                          const FacebookSigninComponent(),
-                          // not yet implemented in the CLI
-                          SocialSigninButton.twitter(() {
-                            throw UnimplementedError();
-                          }),
-                          // not yet implemented in the CLI
-                          SocialSigninButton.microsoft(() {
-                            throw UnimplementedError();
-                          }),
-                        ],
-                      ),
+                      // Social logins removed for MVP - email/password only
+                      // Can add Google/Apple sign-in post-MVP
                     ],
                   ),
                 ),

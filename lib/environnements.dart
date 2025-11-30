@@ -8,13 +8,13 @@ part 'environnements.freezed.dart';
 
 const _kEnvironmentInput = String.fromEnvironment('ENV', defaultValue: 'dev');
 
-const _kBackendUrl = String.fromEnvironment(
-  'BACKEND_URL',
-  // this URL is a fake backend to let you test the app without having to setup your own
-  // it replies with fake data and is not meant to be used in production
-  // please replace it with your own backend URL
-  defaultValue: 'https://us-central1-apparencekit-pro.cloudfunctions.net/app',
-);
+/// Supabase project URL
+/// This is public - security is handled by RLS policies
+const _kSupabaseUrl = 'https://ifduoodnhdtgyvchqgis.supabase.co';
+
+/// Supabase anon key
+/// This is PUBLIC and safe to commit - it only allows what RLS permits
+const _kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZHVvb2RuaGR0Z3l2Y2hxZ2lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODk1NTAsImV4cCI6MjA4MDA2NTU1MH0.tOnI8LVRZrjZdUc9d7pUzUrWd6IZOJLOGt0zOIOuOOk';
 
 final environmentProvider = Provider<Environment>(
   (ref) => Environment.fromEnv(),
@@ -99,12 +99,16 @@ sealed class Environment with _$Environment {
 
   const Environment._();
 
+  /// Supabase anon key - same for all environments
+  /// This is public - security is handled by RLS
+  String get supabaseAnonKey => _kSupabaseAnonKey;
+
   factory Environment.fromEnv() {
     switch (_kEnvironmentInput) {
       case 'dev':
         return const Environment.dev(
           name: 'dev',
-          backendUrl: _kBackendUrl,
+          backendUrl: _kSupabaseUrl,
           appStoreId: '',
           revenueCatAndroidApiKey: String.fromEnvironment(
             'RC_ANDROID_API_KEY',
@@ -115,13 +119,13 @@ sealed class Environment with _$Environment {
             defaultValue: '',
           ),
           mixpanelToken: String.fromEnvironment("MIXPANEL_TOKEN"),
-          authenticationMode: AuthenticationMode.anonymous,
-          
+          // Auth required - no anonymous sign-ins for CHIP'D
+          authenticationMode: AuthenticationMode.authRequired,
         );
       case 'prod':
         return const Environment.prod(
           name: 'production',
-          backendUrl: _kBackendUrl,
+          backendUrl: _kSupabaseUrl,
           appStoreId: String.fromEnvironment('APP_STORE_ID'),
           revenueCatAndroidApiKey: String.fromEnvironment(
             'RC_ANDROID_API_KEY',
@@ -133,8 +137,8 @@ sealed class Environment with _$Environment {
           ),
           sentryDsn: String.fromEnvironment('SENTRY_DSN'),
           mixpanelToken: String.fromEnvironment("MIXPANEL_TOKEN"),
-          authenticationMode: AuthenticationMode.anonymous,
-          
+          // Auth required - no anonymous sign-ins for CHIP'D
+          authenticationMode: AuthenticationMode.authRequired,
         );
       default:
         throw Exception('Unknown environment $_kEnvironmentInput');

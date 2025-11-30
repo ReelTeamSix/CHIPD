@@ -1,15 +1,10 @@
 import 'package:apparence_kit/core/bottom_menu/bottom_menu.dart';
 import 'package:apparence_kit/core/data/api/analytics_api.dart';
 import 'package:apparence_kit/core/guards/authenticated_guard.dart';
-import 'package:apparence_kit/core/guards/user_info_guard.dart';
 import 'package:apparence_kit/core/widgets/page_not_found.dart';
-import 'package:apparence_kit/modules/authentication/ui/phone_auth_page.dart';
 import 'package:apparence_kit/modules/authentication/ui/recover_password_page.dart';
 import 'package:apparence_kit/modules/authentication/ui/signin_page.dart';
 import 'package:apparence_kit/modules/authentication/ui/signup_page.dart';
-import 'package:apparence_kit/modules/feedbacks/ui/component/add_feature_form.dart';
-import 'package:apparence_kit/modules/feedbacks/ui/feedback_page.dart';
-import 'package:apparence_kit/modules/onboarding/ui/onboarding_page.dart';
 import 'package:apparence_kit/modules/subscription/ui/premium_page.dart';
 
 import 'package:flutter/material.dart';
@@ -43,19 +38,16 @@ GoRouter generateRouter({
       ...?observers,
     ],
     routes: [
+      // Home - requires authentication, redirects to signin if not logged in
       GoRoute(
         name: 'home',
         path: '/',
-        builder: (context, state) => const UserInfosGuard(
-          fallbackRoute: '/onboarding',
+        builder: (context, state) => const AuthenticatedGuard(
+          fallbackRoute: '/signin',
           child: BottomMenu(),
         ),
       ),
-      GoRoute(
-        name: 'onboarding',
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingPage(),
-      ),
+      // Auth routes
       GoRoute(
         name: 'signup',
         path: '/signup',
@@ -67,30 +59,17 @@ GoRouter generateRouter({
         builder: (context, state) => const SigninPage(),
       ),
       GoRoute(
-        name: 'signinWithPhone',
-        path: '/signinWithPhone',
-        builder: (context, state) => const PhoneAuthPage(),
+        name: 'recover_password',
+        path: '/recover_password',
+        builder: (context, state) => const RecoverPasswordPage(),
       ),
+      // Premium/Subscription
       GoRoute(
         name: 'premium',
         path: '/premium',
         builder: (context, state) => const PremiumPage(),
       ),
-      GoRoute(
-        name: 'feedback',
-        path: '/feedback',
-        builder: (context, state) => const FeedbackPage(),
-      ),
-      GoRoute(
-        name: 'feedback_new',
-        path: '/feedback/new',
-        builder: (context, state) => const AddFeatureComponent(),
-      ),
-      GoRoute(
-        name: 'recover_password',
-        path: '/recover_password',
-        builder: (context, state) => const RecoverPasswordPage(),
-      ),
+      // 404
       GoRoute(
         name: '404',
         path: '/404',

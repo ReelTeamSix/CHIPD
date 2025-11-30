@@ -1,45 +1,25 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "CHIP'D (Debug)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            // IMPORTANT: Copy your values from .env here
+            // This file is committed to git - DO NOT put secrets here
+            // OR uncomment .vscode/ in .gitignore first
+            "args": [
+                "--dart-define=ENV=dev",
+                "--dart-define=SUPABASE_URL=YOUR_SUPABASE_URL_HERE",
+                "--dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY_HERE"
+            ]
+        },
         {
             "name": "Tests",
             "type": "dart",
             "request": "launch",
             "program": "./test/"
-        },
-        {
-            "name": "Supabase - Development",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "args": [
-                "--dart-define=ENV=dev",
-                "--dart-define=BACKEND_URL=",
-                "--dart-define=SUPABASE_TOKEN=",
-            ]
-        },
-        {
-            "name": "HttpClient - Development",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "args": [
-                "--dart-define=ENV=dev",
-                "--dart-define=BACKEND_URL=https://us-central1-apparencekit-pro.cloudfunctions.net/app",
-            ]
-        },
-        {
-            "name": "Firebase - Development",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "args": [
-                "--dart-define=ENV=dev",
-                "--dart-define=BACKEND_URL=",
-            ]
         }
     ]
 }

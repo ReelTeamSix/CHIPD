@@ -46,4 +46,4 @@ app.*.map.json
 
 # Android local properties (contains local paths)
 android/local.properties
-local.properties
+local.properties.env

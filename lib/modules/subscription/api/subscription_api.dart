@@ -34,11 +34,10 @@ class SubscriptionApi {
       }
       return SubscriptionEntity.fromJson(res.first);
     } catch (e) {
-      _logger.e(e);
-      throw ApiError(
-        code: 0,
-        message: '$e',
-      );
+      // For MVP: gracefully handle missing subscriptions table
+      // The app works without subscriptions - this is optional
+      _logger.w('Subscriptions not available (table may not exist): $e');
+      return null;
     }
   }
 }

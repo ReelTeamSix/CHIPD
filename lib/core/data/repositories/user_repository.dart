@@ -47,8 +47,8 @@ class UserRepository {
       };
     } catch (e) {
       // We catch the error to avoid blocking the user if the subscription is not available
-      // On most case it's because you didn't yet setup the RevenueCat api key
-      Logger().e('Error while getting subscription');
+      // For MVP: subscriptions table may not exist, RevenueCat may not be configured
+      Logger().w('Subscriptions not available (MVP): $e');
       // We return the user without the subscription
       return User.fromEntity(userEntity);
     }
