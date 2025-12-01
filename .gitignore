@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.env
 
 # IntelliJ related
 *.iml
@@ -46,4 +47,4 @@ app.*.map.json
 
 # Android local properties (contains local paths)
 android/local.properties
-local.properties.env
+local.properties

@@ -6,460 +6,469 @@ alwaysApply: false
 
 # CHIP'D Month 1: Desk Prototype Sprint Guide
 
-## Multi-Agent Strategy (4 Agents)
+## Current Status
 
-### Agent Roles
-| Agent | Track | Focus Area |
-|-------|-------|------------|
-| **Agent 1** | 🗄️ Backend | Supabase schema, RLS policies, Edge Functions |
-| **Agent 2** | 📱 UI | Screens, widgets, navigation |
-| **Agent 3** | ⚙️ Services | Business logic, NFC, GPS, state management |
-| **Agent 4** | 🧪 Testing | Unit tests, widget tests, integration tests |
-
-### Parallelization Rules
-- ✅ Agents can work in parallel on independent tracks
-- ⚠️ Wait for dependencies before starting dependent work
-- 🔄 Sync at end of each day/sprint block
-
----
-
-## Pre-Sprint Checklist (Already Complete)
+### Completed ✅
 - [x] Theme system (CHIP'D colors, typography)
 - [x] Lab Mode service foundation
 - [x] Git workflow established
-- [x] Branch protection configured
+- [x] Auth flow (email/password)
+- [x] Supabase connection
+- [x] **Database Schema v1.1.0 deployed** (rounds, round_players, games, subscriptions)
+
+### In Progress 🔄
+- [ ] NFC service implementation
+- [ ] Round flow UI
+- [ ] GPS integration with Lab Mode
 
 ---
 
-## WEEK 1: Lab Mode & GPS
+## Database Schema (DEPLOYED)
 
-### Day 1-2: Parallel Sprint Block
+The following tables are now live in Supabase:
 
-**Agent 1 (Backend):**
 ```
-Create Supabase migration for `courses` table:
-- id (uuid, primary key)
-- name (text)
-- holes (jsonb) - Array of {hole_number, par, green_lat, green_lng, tee_lat, tee_lng}
-- created_at (timestamptz)
-
-RLS: SELECT for authenticated users. INSERT/UPDATE for admin only.
-
-Also create `test_courses` seed data with 1-2 mock courses for Lab Mode testing.
+✅ users (with tier, chip_balance)
+✅ courses (with holes jsonb)
+✅ nfc_tags (player-owned, nickname)
+✅ rounds (created_by, verification_level, GPS coords)
+✅ round_players (join_method, verification_status, scores)
+✅ round_games (dynamic side games)
+✅ round_game_players
+✅ round_game_results
+✅ chip_transactions
+✅ handicap_history
+✅ subscriptions (free, verified, the_900)
 ```
+
+**No more backend schema work needed for MVP!**
+
+---
+
+## Multi-Agent Strategy (4 Agents)
+
+| Agent | Track | Focus Area |
+|-------|-------|------------|
+| **Agent 1** | 🗄️ Backend | Edge Functions, API calls |
+| **Agent 2** | 📱 UI | Screens, widgets, navigation |
+| **Agent 3** | ⚙️ Services | NFC, GPS, state management |
+| **Agent 4** | 🧪 Testing | Unit tests, widget tests |
+
+---
+
+## WEEK 1: Lab Mode & NFC Foundation
+
+### Day 1-2: GPS + Lab Mode Integration
 
 **Agent 2 (UI):**
 ```
-Review existing Settings screen. Ensure Lab Mode toggle is connected to LabModeService.
-Create a new screen: `TestGpsScreen` in lib/modules/debug/ui/test_gps_screen.dart
+Create TestGpsScreen in lib/modules/debug/ui/test_gps_screen.dart:
 - Large button: "Get Current Location"
-- Display area showing lat/lng coordinates
+- Display: lat/lng coordinates
+- Lab Mode indicator badge
 - Add navigation from Settings > Developer Options
 ```
 
 **Agent 3 (Services):**
 ```
-Update LabModeService to integrate with Geolocator package:
-1. Add geolocator dependency if not present
-2. Update getCurrentLocation() method:
-   - If Lab Mode ON: return deskLocation immediately
-   - If Lab Mode OFF: use Geolocator.getCurrentPosition()
-3. Add permission handling for location services
+Update LabModeService:
+1. Add geolocator dependency
+2. getCurrentLocation() method:
+   - Lab Mode ON → return deskLocation
+   - Lab Mode OFF → use Geolocator.getCurrentPosition()
+3. Add location permission handling
+4. Add LocationService wrapper for the app to use
 ```
 
 **Agent 4 (Testing):**
 ```
-Create/update tests for LabModeService:
-- test/services/lab_mode_service_test.dart
-- Test cases:
-  1. Toggle persists across restarts (mock SharedPreferences)
-  2. getCurrentLocation returns deskLocation when enabled
-  3. getCurrentLocation returns null/real coords when disabled
+Update test/services/lab_mode_service_test.dart:
+- Test: Lab Mode returns deskLocation
+- Test: Lab Mode OFF returns real/null coords
+- Test: Toggle persists across restarts
 ```
 
-**🛑 Sync Point:** All agents commit. Run `flutter test`. Verify app launches.
+**🛑 Sync Point:** GPS works in Lab Mode. App shows coordinates.
 
 ---
 
-### Day 3-4: NFC Foundation
-
-**Agent 1 (Backend):**
-```
-Create Supabase migration for `nfc_tags` table:
-- uid (text, primary key) - The NFC tag's unique ID
-- owner_id (uuid, references auth.users)
-- registered_at (timestamptz)
-- status (text) - 'active', 'revoked'
-
-RLS Policies:
-- SELECT: Users can only see their own tags
-- INSERT: Users can insert new tags (uid not already registered)
-- UPDATE: Users can only update their own tags
-- DELETE: Disabled
-```
+### Day 3-4: NFC Service
 
 **Agent 2 (UI):**
 ```
 Create TagRegistrationScreen in lib/modules/nfc/ui/tag_registration_screen.dart:
 - Center layout with large NFC icon
-- "Scan New Tag" button (primary green CTA)
-- Status text area for feedback
-- Loading overlay during scan/registration
-- Success/Error states with appropriate messaging
+- "Scan Your Chip" button (primary green CTA)
+- Status text for feedback
+- Loading overlay during scan
+- Success/Error states
+- Shows tag nickname input after successful scan
 ```
 
 **Agent 3 (Services):**
 ```
 Create NfcService in lib/modules/nfc/services/nfc_service.dart:
 - Use nfc_manager package
-- Method: startSession({required Function(String uid) onDiscovered, required Function(String error) onError})
+- Method: startSession({onDiscovered, onError})
 - Method: stopSession()
 - Extract UID as uppercase hex string
-- Handle platform-specific behavior (Android vs iOS)
-- Wrap in try-catch for security
+- Handle Android/iOS differences
+- Create NfcServiceFake for testing
 ```
 
 **Agent 4 (Testing):**
 ```
-Create test mocks and tests for NFC:
-- test/mocks/mock_nfc_service.dart - Fake implementation for UI testing
+Create tests:
 - test/modules/nfc/nfc_service_test.dart
-- Test cases:
-  1. UID extraction formats correctly
-  2. Error handling for session failures
-  3. Session cleanup on dispose
+- Test: UID extraction formats correctly (14 hex chars)
+- Test: Error handling for session failures
+- Test: Session cleanup on dispose
 ```
 
-**🛑 Sync Point:** Deploy SQL to Supabase. Verify table exists. Run tests.
+**🛑 Sync Point:** NFC service reads tags. UI shows scanned UID.
 
 ---
 
-### Day 5: Integration Sprint
+### Day 5: Tag Registration Flow
 
 **Agent 1 (Backend):**
 ```
 Create Edge Function: supabase/functions/register-tag/index.ts
-- Input: { tagUid: string }
+- Input: { tagUid: string, nickname?: string }
 - Auth: Require authenticated user
-- Logic:
-  1. Check if tag already registered → Error 409
-  2. Insert new row with owner_id = user.id
-  3. Return success with tag details
-- Standardized error responses: { error: string, code: string }
+- Check user tier (must be 'verified' or 'the_900')
+- Check if tag already registered → Error 409
+- Insert into nfc_tags with owner_id
+- Return success with tag details
 ```
 
 **Agent 2 (UI):**
 ```
 Connect TagRegistrationScreen to NfcService and API:
-- On button tap: Start NFC session
-- On tag discovered: Show loading, call register-tag Edge Function
-- On success: Show green checkmark animation, navigate back
-- On error: Show error message, allow retry
-- Handle "Tag already registered" specifically
+- On scan → Show loading, call register-tag API
+- On success → Show nickname input, then green checkmark
+- On error → Show specific message:
+  - "Tag already registered"
+  - "Upgrade to register a chip" (free tier)
+- Navigate to "My Chips" screen
 ```
 
 **Agent 3 (Services):**
 ```
 Create NfcTagRepository in lib/modules/nfc/repositories/nfc_tag_repository.dart:
-- Method: registerTag(String uid) → Future<NfcTag>
+- Method: registerTag(uid, nickname) → Future<NfcTag>
 - Method: getMyTags() → Future<List<NfcTag>>
+- Method: lookupTagOwner(uid) → Future<User?>
 - Create NfcTag domain model
-- Handle API errors with proper error types
 ```
 
-**Agent 4 (Testing):**
-```
-Create integration tests:
-- test/modules/nfc/tag_registration_test.dart
-- Test the full flow with mocked services
-- Verify UI states: idle → scanning → loading → success/error
-```
-
-**🛑 Sync Point:** Deploy Edge Function. Test on physical Android device with real NFC tag.
+**🛑 Sync Point:** Can register a physical NFC tag to account.
 
 ---
 
-## WEEK 2: Rounds System
+## WEEK 2: Round System (Captain Model)
 
-### Day 1-2: Database & Models
-
-**Agent 1 (Backend):**
-```
-Create Supabase migration for `rounds` table:
-- id (uuid, primary key)
-- player_a_id (uuid, references auth.users) - Round initiator
-- player_b_id (uuid, references auth.users) - Partner
-- player_a_tag_uid (text) - Tag used by player A
-- player_b_tag_uid (text) - Tag used by player B
-- course_id (uuid, references courses, nullable)
-- start_time (timestamptz)
-- end_time (timestamptz, nullable)
-- status (text) - 'pending', 'active', 'completed', 'verified', 'disputed'
-- created_at (timestamptz)
-
-RLS: Users see rounds where they are player_a OR player_b.
-```
+### Day 1-2: Start Round Flow
 
 **Agent 2 (UI):**
 ```
 Create StartRoundScreen in lib/modules/rounds/ui/start_round_screen.dart:
 - Header: "Start New Round"
-- Lab Mode indicator (if enabled, show mock location notice)
-- Course selector (dropdown, optional for MVP)
-- Large "Start Round" button
-- Partner scan modal (triggered on button tap)
+- Lab Mode badge (if enabled)
+- Course selector (optional dropdown)
+- Player count selector: [2] [3] [4]
+- Large "Tap Players In" button
+- Bottom sheet for adding players:
+  - "Scan Chip" option (verified)
+  - "Share Invite Link" option (unverified)
+- Player list showing who's joined (with verification badges)
+- "Start Round" button (enabled when 2+ players)
 ```
 
 **Agent 3 (Services):**
 ```
 Create RoundService in lib/modules/rounds/services/round_service.dart:
-- Create Round domain model with freezed
-- Create RoundRepository
-- Method: startRound(partnerTagUid: String) → Future<Round>
-- Method: getActiveRound() → Future<Round?>
-- Method: finishRound(roundId: String, verificationTagUid: String) → Future<Round>
+- Round domain model (from rounds + round_players)
+- RoundPlayer domain model
+
+Methods:
+- createRound(courseId?) → Future<Round>
+- addPlayerByNfc(roundId, tagUid) → Future<RoundPlayer>
+- addPlayerByInvite(roundId, userId) → Future<RoundPlayer>
+- startRound(roundId) → Future<Round>
+- getActiveRound() → Future<Round?>
+- getMyRounds() → Future<List<Round>>
 ```
 
 **Agent 4 (Testing):**
 ```
-Create round logic tests:
-- test/modules/rounds/round_service_test.dart
-- Test: Cannot start round with own tag
-- Test: Cannot start round if already in active round
-- Test: Round status transitions correctly
+test/modules/rounds/round_service_test.dart:
+- Test: Create round sets created_by correctly
+- Test: Add player by NFC sets verification_status = 'verified'
+- Test: Add player by invite sets verification_status = 'unverified'
+- Test: Cannot add same player twice
+- Test: Cannot add more than 4 players
 ```
 
-**🛑 Sync Point:** SQL deployed. Models compile. Tests pass.
+**🛑 Sync Point:** Can create round and add players via NFC or invite.
 
 ---
 
-### Day 3-4: Start Round Flow
-
-**Agent 1 (Backend):**
-```
-Create Edge Function: supabase/functions/start-round/index.ts
-- Input: { partnerTagUid: string, courseId?: string }
-- Validation:
-  1. Partner tag must exist and be registered
-  2. Partner tag cannot be caller's own tag
-  3. Neither player can have an active round already
-- Create round with status='active', start_time=now()
-- Return round details including partner info
-```
+### Day 3-4: Active Round Screen
 
 **Agent 2 (UI):**
 ```
-Build the partner scan modal flow:
-1. On "Start Round" tap → Open bottom sheet modal
-2. Modal shows "Scan Partner's Tag" with NFC icon
-3. Start NFC session automatically
-4. On scan → Show partner's name/avatar (lookup from tag)
-5. Confirm button → Call start-round API
-6. On success → Navigate to ActiveRoundScreen
+Create ActiveRoundScreen in lib/modules/rounds/ui/active_round_screen.dart:
+- Timer display (counting from start_time)
+- Player cards grid (2x2 for foursome):
+  - Name, avatar
+  - Verification badge (✓ verified, ○ unverified)
+  - Score entry for current hole
+- Current hole indicator
+- Course name (if selected)
+- "Next Hole" button
+- "Finish Round" button (bottom)
+
+Create PlayerScoreCard widget:
+- Tap to enter score
+- Par as default, +/- buttons
+- Shows running total
 ```
 
 **Agent 3 (Services):**
 ```
 Create RoundStateNotifier in lib/modules/rounds/providers/round_state_notifier.dart:
-- Riverpod AsyncNotifier for round state
-- States: idle, scanning, starting, active, finishing, completed
-- Method: scanPartner() - Triggers NFC scan
-- Method: confirmStart(partnerTagUid) - Calls API
-- Method: finishRound() - Triggers verification flow
-```
+- Riverpod AsyncNotifier
+- States: idle, creating, active, closing, completed
+- Real-time sync with Supabase (or polling)
+- Method: updateScore(playerId, hole, score)
+- Method: nextHole()
+- Method: closeRound()
 
-**Agent 4 (Testing):**
-```
-Test round start scenarios:
-- test/modules/rounds/start_round_test.dart
-- Test: Valid partner tag starts round
-- Test: Own tag shows error
-- Test: Unregistered tag shows error
-- Test: Already in round shows error
-```
-
-**🛑 Sync Point:** Full start round flow works on device.
-
----
-
-### Day 5: Active Round Dashboard
-
-**Agent 2 (UI):**
-```
-Create ActiveRoundScreen in lib/modules/rounds/ui/active_round_screen.dart:
-- Timer display (counting up from start_time)
-- Player A card (left) - Name, avatar
-- Player B card (right) - Name, avatar  
-- Course name (if selected)
-- "Finish & Verify" button (bottom, prominent)
-
-Extract reusable PlayerCard widget.
-```
-
-**Agent 3 (Services):**
-```
-Create round timer logic:
-- Provider that emits elapsed time every second
-- Calculate from round.start_time to now()
+Create round timer provider:
+- Emits elapsed time every second
 - Format as HH:MM:SS
 ```
 
 **Agent 4 (Testing):**
 ```
-Widget tests for ActiveRoundScreen:
-- test/modules/rounds/active_round_screen_test.dart
-- Test: Timer displays and updates
-- Test: Player cards show correct info
-- Test: Finish button is tappable
+test/modules/rounds/active_round_test.dart:
+- Test: Timer updates correctly
+- Test: Score updates sync to round_players.scores
+- Test: Next hole increments correctly
+- Test: Can't exceed 18 holes
 ```
+
+**🛑 Sync Point:** Can play through round, entering scores.
 
 ---
 
-## WEEK 3: Verification & Finish
-
-### Day 1-2: Finish Round Logic
-
-**Agent 1 (Backend):**
-```
-Create Edge Function: supabase/functions/verify-round/index.ts
-- Input: { roundId: string, verificationTagUid: string }
-- Validation:
-  1. Round exists and caller is a player
-  2. Round status is 'active'
-  3. Verification tag matches partner's tag
-  4. Minimum round duration check (optional, e.g., 30 seconds)
-- Update: status='verified', end_time=now()
-- Return updated round
-```
+### Day 5: Close Round & Attestation
 
 **Agent 2 (UI):**
 ```
-Build finish round flow in ActiveRoundScreen:
-1. On "Finish & Verify" tap → Open verification modal
-2. Modal: "Scan Partner's Tag to Verify"
-3. Start NFC session
-4. On scan → Call verify-round API
-5. On success → Show success animation, update UI
-6. On error (wrong tag) → Show error, allow retry
+Create CloseRoundFlow:
+1. Captain taps "Close Round"
+2. Bottom sheet: "Have each player tap your chip"
+3. As each player taps:
+   - Show their name + "Verified ✓"
+   - Update round_players.close_verified_at
+4. After all verified (or timeout):
+   - Show attestation screen
+
+Create AttestationScreen:
+- Show all player scores
+- Each player on their phone sees:
+  - All scores listed
+  - [Confirm All] [Dispute] buttons
+- When all confirm → Round status = 'verified'
 ```
 
 **Agent 3 (Services):**
 ```
-Update RoundStateNotifier with finish flow:
-- Method: startVerification() - Opens modal, starts NFC
-- Method: submitVerification(tagUid) - Calls verify API
-- Handle verification errors gracefully
-- Update local state on success
+Update RoundService:
+- Method: verifyPlayerClose(roundId, tagUid) → marks player as close-verified
+- Method: attestRound(roundId) → sets has_attested = true for current user
+- Method: checkAllAttested(roundId) → updates round status if all attested
+
+Logic:
+- Round is 'verified' when all round_players have has_attested = true
+- verification_level calculated from player verification statuses
 ```
 
 **Agent 4 (Testing):**
 ```
-Test verification scenarios:
-- test/modules/rounds/verify_round_test.dart
-- Test: Correct partner tag verifies
-- Test: Wrong tag shows error
-- Test: Own tag shows error
-- Test: Unregistered tag shows error
+test/modules/rounds/close_round_test.dart:
+- Test: NFC tap updates close_verified_at
+- Test: Attestation sets has_attested
+- Test: All attested → round status = 'verified'
+- Test: Unverified players can still attest
 ```
 
-**🛑 Sync Point:** Full round lifecycle works: Start → Active → Verify
+**🛑 Sync Point:** Full round flow works: Create → Play → Close → Attest → Verified
 
 ---
 
-### Day 3-4: Polish & Edge Cases
+## WEEK 3: Polish & Integration
+
+### Day 1-2: Round History & Home Screen
 
 **Agent 2 (UI):**
 ```
-Add success/completion states:
-- Verification success animation (green checkmark, confetti optional)
-- Round summary screen showing:
-  - Duration
-  - Players
-  - "Verified" badge
-- Round history list on home screen
+Create RoundHistoryScreen:
+- List of past rounds
+- Each card shows:
+  - Date, course
+  - Players (with verification badges)
+  - Scores
+  - Round verification_level badge
+- Tap to see details
+
+Update HomeScreen:
+- "Active Round" banner if one exists
+- "Start Round" CTA
+- Recent rounds list
+- Quick stats (rounds played, verified count)
 ```
 
 **Agent 3 (Services):**
 ```
-Handle edge cases:
-- App backgrounded during round (persist state)
-- Network failure during verification (retry logic)
-- Session timeout handling
-- Clean up NFC sessions properly
-```
-
-**Agent 4 (Testing):**
-```
-End-to-end flow test:
-- test/integration/full_round_flow_test.dart
-- Mock all services
-- Test complete flow: Login → Start → Active → Verify → History
+Create RoundHistoryRepository:
+- Method: getMyRounds(limit, offset) → paginated
+- Method: getRoundDetails(roundId) → full round with players
+- Cache recent rounds locally
 ```
 
 ---
 
-### Day 5: Milestone - Desk Prototype Complete
+### Day 3-4: Invite Flow (Unverified Players)
 
-**All Agents - Full Integration Test:**
+**Agent 2 (UI):**
 ```
-Perform "Desk Golf Championship" test:
+Create InvitePlayerFlow:
+- Generate invite link/code for round
+- Share sheet (SMS, copy link)
+- QR code display option
+
+Create JoinRoundScreen:
+- Opens from deep link
+- Shows round info
+- "Join Round" button
+- Adds user as unverified player
+```
+
+**Agent 3 (Services):**
+```
+Create InviteService:
+- Method: generateInviteLink(roundId) → URL
+- Method: joinRoundByInvite(inviteCode) → adds player
+- Handle deep link routing
+```
+
+---
+
+### Day 5: Desk Golf Championship Test
+
+**Full Integration Test:**
+```
 1. Ensure Lab Mode ON
-2. Login with test account
-3. Navigate to Start Round
-4. Scan "Partner" tag (second registered tag)
-5. Verify round starts, timer counting
-6. Wait 60+ seconds
-7. Tap "Finish & Verify"
-8. Scan "Partner" tag again
-9. Verify green checkmark appears
-10. Check Supabase: rounds table has verified row
-
-Document any issues found.
+2. Login with test account (Captain)
+3. Create new round
+4. Scan Tag A → Player added (verified)
+5. [Optional] Share invite link → Player joins (unverified)
+6. Start round
+7. Enter scores for 3-4 holes
+8. Tap "Close Round"
+9. Player A taps Captain's chip
+10. Both players attest scores
+11. Verify: round status = 'verified'
+12. Check round history shows correct badges
 ```
 
 ---
 
 ## WEEK 4: Buffer & Hardening
 
-Reserve for:
+### Focus Areas:
 - Bug fixes from Week 3 testing
+- Edge case handling (network failures, interrupted rounds)
 - Performance optimization
 - Code cleanup and documentation
-- Additional edge case handling
-- Preparing for Phase 2 (Maps integration)
+- Prepare for Phase 2 (Maps integration)
+
+### Nice-to-Have (if time):
+- Score entry animations
+- Haptic feedback on NFC scan
+- Sound effects
+- Round sharing (social)
 
 ---
 
-## Git Workflow Per Sprint Block
+## Git Workflow
 
 ```bash
-# Before starting
-git pull origin develop
+# Before starting any work
+git pull origin master
 
 # Create feature branch
-git checkout -b feature/week1-day1-labmode
+git checkout -b feature/week1-nfc-service
 
 # After completion
 git add -A
-git commit -m "feat(labmode): <description>"
-git push origin feature/week1-day1-labmode
+git commit -m "feat(nfc): implement NFC service with UID extraction"
+git push origin feature/week1-nfc-service
 
-# Create PR to develop, merge, then:
-git checkout develop
-git pull origin develop
+# Merge to master when tested
 ```
 
 ## Checkpoint Tags
+
 ```bash
 # After Week 1
-git tag -a v0.2.0-phase1-labmode -m "Lab Mode & GPS complete"
+git tag -a v0.2.0-phase1-nfc -m "NFC Service + Tag Registration"
 
-# After Week 2  
-git tag -a v0.2.1-phase1-nfc -m "NFC Registration complete"
+# After Week 2
+git tag -a v0.2.1-phase1-rounds -m "Round System Complete"
 
 # After Week 3
-git tag -a v0.2.2-phase1-rounds -m "Round system complete"
+git tag -a v0.2.2-phase1-invite -m "Invite Flow + History"
 
 # After Week 4
-git tag -a v0.3.0-desk-prototype -m "Desk Prototype MVP complete"
+git tag -a v0.3.0-desk-prototype -m "Desk Prototype Complete"
+```
+
+---
+
+## Key Architecture Notes
+
+### Round Flow (Captain Model)
+```
+Captain creates round
+  → Captain taps each player's chip (verified)
+  → OR shares invite link (unverified)
+  → Round starts
+
+During round:
+  → Each player enters scores on their phone
+  → Scores sync via round_players.scores
+
+Close round:
+  → Captain initiates close
+  → Each player taps Captain's chip
+  → All players attest scores
+  → Round verified
+```
+
+### Verification Levels
+```
+full: All players joined AND closed via NFC
+partial: Some players verified, some not
+none: All players joined via invite
+```
+
+### Subscription Tiers
+```
+free: No chip, join via invite only, limited features
+verified: Has chip, full features
+the_900: Gold chip, lifetime, founder perks
 ```

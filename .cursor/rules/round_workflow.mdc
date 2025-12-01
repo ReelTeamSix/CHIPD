@@ -1,0 +1,381 @@
+---
+description: CHIP'D Round Workflow - NFC + Dynamic Games + Attestation
+globs:
+alwaysApply: false
+---
+
+# CHIP'D Round Workflow
+
+## The Core Differentiators
+
+1. **Physical NFC Chip** - Status symbol, conversation starter, cross-platform solution
+2. **Dynamic Side Games** - Context-aware prompts during play, not pre-configured
+3. **Verified Handicap** - Calculated from attested rounds only, can't be gamed
+4. **Peer Attestation** - Mutual score confirmation, prevents cheating
+
+---
+
+## The Chip = The Subscription
+
+The chip IS the premium product. No chip = free tier. Has chip = verified tier.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SUBSCRIPTION TIERS                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  FREE ($0)              VERIFIED ($X/mo)      THE 900 ($$$$)   │
+│  ────────────────       ────────────────      ────────────────  │
+│  ○ No chip              🟢 Standard chip      🥇 Gold chip      │
+│  ○ Unverified           ✓ Full verification   ✓ Full verify    │
+│  ○ 3 rounds/month       ✓ Unlimited rounds    ✓ Unlimited      │
+│  ○ No side games        ✓ All side games      ✓ All games      │
+│  ○ No chip betting      ✓ Chip economy        ✓ Chip economy   │
+│  ○ No handicap          ✓ Verified handicap   ✓ Verified HC    │
+│  ○ Basic leaderboard    ✓ Full leaderboard    ✓ Gold badge     │
+│                                               ✓ Lifetime       │
+│                                               ✓ Early access   │
+│                                               ✓ Founder #1-900 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### The Conversion Funnel
+
+```
+Free user joins friend's round via link
+         │
+         ▼
+Sees "Unverified" badge, can't bet, limited features
+         │
+         ▼
+"Get a CHIP'D chip to unlock full features"
+         │
+         ▼
+Subscribes → Chip shipped → Full access
+```
+
+### Chip Types
+
+| Chip | Tier | Description |
+|------|------|-------------|
+| 🟢 Standard (Green) | Verified | Monthly subscription, full features |
+| 🥇 Gold | The 900 | Founder tier, lifetime, limited to 900 |
+| 🏆 Custom | Verified+ | Club/tournament branded (future) |
+
+### What Free Users CAN Do
+- ✅ Join rounds via invite link (unverified)
+- ✅ Enter scores
+- ✅ Attest others' scores
+- ✅ See distances (basic GPS)
+- ✅ 3 rounds per month
+
+### What Free Users CAN'T Do
+- ❌ Own a chip (tap to join/verify)
+- ❌ Be "verified" in rounds
+- ❌ Create or join side games
+- ❌ Bet chips
+- ❌ Track verified handicap
+- ❌ Unlimited rounds
+
+---
+
+## Round Flow
+
+### Phase 1: Start Round
+
+```
+Captain creates round in app
+├── Selects course (optional, GPS can detect)
+├── Taps each player's chip to invite:
+│   ├── Tap B's chip → B added
+│   ├── Tap C's chip → C added
+│   └── Tap D's chip → D added
+├── GPS verifies all at course
+└── Round begins: status = 'in_progress'
+```
+
+**Taps required:** N-1 (where N = players)
+- Twosome: 1 tap
+- Threesome: 2 taps
+- Foursome: 3 taps
+
+### Phase 2: During Round
+
+Each player enters scores on their own phone. Scores sync in real-time.
+
+**Dynamic Game Prompts** appear based on context:
+
+| Trigger | Prompt |
+|---------|--------|
+| Arrive at Par 3 (GPS) | "Closest to Pin? [10 chips] [Custom] [Skip]" |
+| Player scores birdie | "Birdie! Start skins game?" |
+| Complete hole 9 | "Front 9 done. Nassau bet?" |
+| Par 5 approach | "Longest drive?" |
+
+Players can:
+- Accept prompts → Game created for that hole/moment
+- Skip prompts → No game, just score tracking
+- Create custom games anytime
+
+**Side Game Flow:**
+```
+A proposes CTP on Hole 7 (10 chips)
+├── Push to B, C, D: "CTP Hole 7? [I'm in] [Pass]"
+├── B, C accept. D passes.
+├── After hole: "Who won?" → B selected
+├── A and C tap B's chip (or confirm in-app)
+└── B wins pot (20 chips from A and C)
+```
+
+### Phase 3: End Round
+
+```
+Captain taps "Close Round"
+├── Each player taps Captain's chip:
+│   ├── B taps → B verified + sees A's final score
+│   ├── C taps → C verified + sees A's final score
+│   └── D taps → D verified + sees A's final score
+├── GPS captures end location
+└── status = 'completed'
+```
+
+**Taps required:** N-1 (each other player taps Captain)
+
+### Phase 4: Attestation
+
+Each player sees a summary screen:
+
+```
+┌────────────────────────────────────────┐
+│ ROUND COMPLETE                         │
+│                                        │
+│ SCORES (Confirm All)                   │
+│ A: 78  [✓]                             │
+│ B: 82  [✓]                             │
+│ C: 85  [Review]  ← Tap to see details  │
+│ D: 90  [✓]                             │
+│                                        │
+│ SIDE GAMES                             │
+│ CTP Hole 7: B won (20 chips)    [✓]    │
+│ CTP Hole 12: A won (30 chips)   [✓]    │
+│ Skins: A 2, C 1, carryover 6    [✓]    │
+│                                        │
+│ [Confirm All]  [Dispute]               │
+└────────────────────────────────────────┘
+```
+
+**When all confirm:**
+- status = 'verified'
+- Chip balances update
+- Handicaps recalculate
+
+**If anyone disputes:**
+- status = 'disputed'
+- Disputed items flagged for resolution
+- Can fix and re-attest
+
+---
+
+## Handicap System
+
+Handicap is calculated ONLY from verified rounds.
+
+```
+Verified Round
+     │
+     ▼
+Differential = (Score - Course Rating) × (113 / Slope)
+     │
+     ▼
+Handicap = Average of best 8 of last 20 differentials
+     │
+     ▼
+Stored in handicap_history table
+```
+
+**Why this matters:**
+- Can't inflate handicap with fake rounds
+- Partners would dispute obviously wrong scores
+- Betting is fair because handicaps are real
+
+**Handicap-Based Games:**
+```
+A (8.2) vs B (15.7) in stroke play
+B gets 8 strokes (on hardest 8 holes per course rating)
+Fair game despite skill difference
+```
+
+---
+
+## Chip Economy
+
+All transactions are immutable ledger entries.
+
+| Transaction Type | Description |
+|-----------------|-------------|
+| game_win | Won a side game |
+| game_loss | Lost a side game |
+| round_bonus | Bonus for completing verified round |
+| streak_bonus | Consecutive rounds bonus |
+| purchase | Bought chips (future) |
+| transfer_in/out | Sent/received chips |
+
+**Chip Settlement (automatic):**
+```
+Round ends, all attest
+├── Skins: A +15, B +5, C +10, D -30
+├── CTP: A +40, B +0, C +40, D -80
+├── Nassau: A +40, B -20, C +60, D -80
+├── ─────────────────────────────────
+└── NET: A +95, B -15, C +110, D -190
+
+Transactions created, balances updated
+```
+
+---
+
+## NFC Tap Summary
+
+| Moment | Who Taps | What Happens |
+|--------|----------|--------------|
+| Round Start | Captain taps each player's chip | Players added to round |
+| During (optional) | Losers tap winner's chip | Concede side bet in real-time |
+| Round End | Each player taps Captain's chip | Presence verified, attestation begins |
+| Side Game Confirm | Losers tap winner's chip (or in-app) | Result confirmed |
+
+---
+
+## Unverified Players (No Chip)
+
+Players without chips can still participate - they just won't be NFC-verified.
+
+### How They Join
+
+```
+Captain creates round
+├── Taps B's chip → B added (verified)
+├── Taps C's chip → C added (verified)
+├── D doesn't have a chip...
+│   └── Captain taps "Invite Player"
+│   └── Options: [Share Link] [Show QR] [Nearby]
+│   └── D opens link, joins round
+│   └── D added (unverified)
+└── Round starts
+```
+
+### Verification Status
+
+| Status | Meaning |
+|--------|---------|
+| `verified` | Joined via NFC AND closed via NFC |
+| `partial` | Either joined OR closed via NFC |
+| `unverified` | No NFC interaction (link/QR join) |
+
+### Round Verification Level
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Round with 4 players:                                         │
+│                                                                │
+│  A ✓  B ✓  C ○  D ✓                                            │
+│                                                                │
+│  verification_level = 'partial' (3/4 verified)                 │
+│  verified_player_count = 3                                     │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### What Unverified Players Can Do
+
+| Feature | Verified | Unverified |
+|---------|----------|------------|
+| Join rounds | Via NFC tap | Via link/QR |
+| Enter scores | ✓ | ✓ |
+| Attest others | ✓ | ✓ |
+| Be attested | ✓ (NFC proven) | ✓ (trust-based) |
+| Join side games | ✓ | ✓ (with warning) |
+| Handicap counts | ✓ Full weight | Reduced/None |
+| Leaderboard badge | "Verified" | "Unverified" |
+
+### Side Games with Unverified Players
+
+```
+A proposes CTP (10 chips each)
+├── B (verified) → [I'm in]
+├── C (unverified) → Warning: "C is unverified"
+│   └── [Include Anyway] [Verified Only]
+└── Stakes adjusted if needed
+```
+
+### Incentive to Get a Chip
+
+- Unverified rounds don't count toward "Verified Handicap"
+- Unverified players show a badge on leaderboards
+- Can't close rounds for others (no chip to tap)
+- Creates natural upgrade path: "Get verified to prove your scores"
+
+---
+
+## Failure Modes
+
+| Scenario | Resolution |
+|----------|------------|
+| Captain's phone dies | Another player can take over as captain (transfer) |
+| Player leaves early | They can't tap out, marked "incomplete" |
+| Player disputes score | Round is flagged, specific hole can be reviewed |
+| NFC tag lost | User registers new tag, old one revoked |
+| No internet during round | Offline mode, syncs when connected |
+| Player has no chip | Join via link, marked "unverified" |
+
+---
+
+## Database Tables
+
+### Core
+- `users` - Profile, handicap, chip_balance
+- `courses` - Course info with hole GPS data
+- `nfc_tags` - Player-owned tags
+- `rounds` - Round metadata, GPS, status
+- `round_players` - Players in round, scores, attestation
+
+### Games
+- `round_games` - Dynamic games created during round
+- `round_game_players` - Who's in each game, handicap strokes
+- `round_game_results` - Outcomes, confirmation tracking
+
+### Economy
+- `chip_transactions` - Immutable ledger
+- `handicap_history` - Handicap changes over time
+
+---
+
+## MVP Phases
+
+### Phase 1: Desk Prototype
+- NFC tap to join/close round
+- Score entry with par default
+- Peer attestation
+- Lab Mode for testing
+
+### Phase 2: GPS + Maps
+- Real-time distance to green
+- Course detection
+- Dynamic prompts based on location
+
+### Phase 3: Games + Chips
+- Side game creation
+- Chip transactions
+- Leaderboards
+- Handicap calculation
+
+---
+
+## Key Metrics
+
+| Metric | Target |
+|--------|--------|
+| Taps to start round | ≤ N-1 players |
+| Time to close round | < 60 seconds |
+| Games per round | 2-4 organic prompts |
+| Attestation completion | > 95% of rounds |
+| Disputes | < 5% of rounds |

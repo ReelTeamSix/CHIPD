@@ -36,9 +36,11 @@ git pull origin master  # Always sync first
 | Tag | Description | Status |
 |-----|-------------|--------|
 | `v0.1.0-theme-refactor` | CHIP'D theme system | ✅ Complete |
-| `v0.2.0-phase1-nfc` | Phase 1: NFC Handshake + Lab Mode | 🔲 Pending |
+| `v0.1.1-auth-cleanup` | Auth flow, Supabase setup | ✅ Complete |
+| `v0.1.2-schema-v1.1` | Database schema v1.1.0 deployed | ✅ Complete |
+| `v0.2.0-phase1-nfc` | Phase 1: NFC + Lab Mode + Rounds | 🔲 In Progress |
 | `v0.3.0-phase2-caddie` | Phase 2: GPS + Distance + Maps | 🔲 Pending |
-| `v0.4.0-phase3-polish` | Phase 3: Token Logic + UI Polish | 🔲 Pending |
+| `v0.4.0-phase3-games` | Phase 3: Side Games + Chips | 🔲 Pending |
 | `v1.0.0-mvp` | MVP Release | 🔲 Pending |
 
 ### Commit Convention
@@ -186,19 +188,84 @@ Edge Functions: Deno/TypeScript.
 
 DATABASE SCHEMA (Supabase)
 
-tables:
+See `database_schema.sql` for full schema. Migration: `migrations/001_peer_attestation.sql`
 
-users: id, chip_balance, handicap.
+VERIFICATION MODEL: Peer Attestation (supports 2-4 players)
+1. GPS proves all players are at the course
+2. NFC tap to join round (Captain taps each player's chip)
+3. NFC tap to close round (each player taps Captain's chip)
+4. Mutual attestation: each player confirms everyone else's scores
+5. Verified handicap: calculated from attested rounds only
 
-nfc_tags: uid, owner_id.
+UNVERIFIED PLAYERS (No Chip):
+- Can join via invite link or QR code
+- Can enter scores and attest others
+- Marked as "unverified" in round
+- Rounds count as "partial" verification
+- Handicap may not update from unverified rounds
+- Creates incentive to get a chip
 
-rounds: id, course_id, players, scores (jsonb), status.
+ROUND WORKFLOW:
+```
+START:
+- Captain creates round, selects course
+- Captain taps each player's chip → they join
+- GPS verifies all at course location
 
-courses:
+DURING:
+- Each player enters scores on their phone
+- Dynamic game prompts based on context:
+  • Par 3 detected → "Closest to Pin?"
+  • Birdie scored → "Start skins game?"
+  • Hole 9 complete → "Nassau bet?"
+- Side games created on-the-fly, not pre-configured
 
-id, name.
+END:
+- Each player taps Captain's chip (presence verification)
+- Attestation screen: confirm everyone's scores
+- Side game results confirmed
+- Chips settle automatically
+- Handicaps update from verified scores
+```
 
-holes (jsonb): Array of objects containing { hole_number: 1, par: 4, green_lat: 0.0, green_lng: 0.0, tee_lat: 0.0, tee_lng: 0.0 }.
+Core Tables (MVP):
+- users: id, email, display_name, handicap, chip_balance
+- courses: id, name, city, state, holes (jsonb)
+- nfc_tags: id, uid (unique), owner_id (required), nickname, is_active
+- rounds: id, created_by, course_id, player_count, status, verification_level, GPS coords
+- round_players: round_id, user_id, tag_uid, join_method, verification_status, scores[], has_attested
+
+Join Methods: 'nfc', 'invite_link', 'qr_code', 'nearby'
+Verification Status: 'verified', 'partial', 'unverified'
+Round Verification Level: 'full', 'partial', 'none'
+
+Side Games Tables:
+- round_games: Dynamic games created during round (CTP, skins, nassau, etc.)
+- round_game_players: Who opted into each game, strokes given
+- round_game_results: Outcomes per hole/game, confirmed_by array
+- chip_transactions: Immutable ledger of all chip movements
+- handicap_history: Track handicap changes from verified rounds
+
+Game Types: ctp, skins, nassau, stroke_play, match_play, bingo_bango_bongo, wolf, greenies, sandies, custom
+
+Round Status: 'pending', 'in_progress', 'completed', 'verified', 'disputed'
+
+Triggers:
+- on_auth_user_created: Auto-creates users row on signup
+- update_*_updated_at: Auto-updates updated_at timestamps
+
+SUBSCRIPTION TIERS:
+The chip IS the subscription - physical product = premium access
+
+| Tier | Chip | Verification | Features |
+|------|------|--------------|----------|
+| Free | None | Unverified | 3 rounds/month, no betting, no handicap |
+| Verified | Standard | Full | Unlimited rounds, betting, handicap |
+| The 900 | Gold | Full | Lifetime, founder badge, early access |
+
+Tables:
+- subscriptions: user_id, tier, status, the_900_number, expires_at
+- tier_features: View of feature access per tier
 
 MVP FEATURE SCOPE
 
