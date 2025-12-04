@@ -65,7 +65,7 @@ dependencies:
   flutter_facebook_auth: ^7.1.2
   sign_in_with_apple: ^7.0.1
   crypto: ^3.0.7
-  purchases_flutter: ^9.9.9
+  purchases_flutter: ^9.9.10
   flutter_local_notifications: ^19.5.0
   sentry_flutter: ^9.8.0
   mixpanel_flutter: ^2.4.4
